@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink antialiased;
+    overflow: hidden;
+  }
+}
+
+@layer components {
+  /* The frosted panels in the prototype are real backdrop blur over the
+     ribbon artwork, not a flat translucent fill. */
+  .pad-row-heading {
+    line-height: 1.35;
+  }
+  .glass {
+    /* A neutral grey tint, not a white one. White frosting over a light canvas
+       leaves nothing for white text to sit against — the prototype's panels
+       are mid-grey for exactly this reason. */
+    background: rgb(108 108 108 / 0.44);
+    backdrop-filter: blur(22px) saturate(1.05);
+    -webkit-backdrop-filter: blur(22px) saturate(1.05);
+    border: 1px solid rgb(255 255 255 / 0.22);
+    box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.3);
+  }
+  .icon-btn {
+    @apply grid h-11 w-11 place-items-center rounded-full text-white/80 transition duration-300 ease-pad;
+    background: rgb(120 120 120 / 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .icon-btn:hover {
+    @apply text-white;
+    background: rgb(120 120 120 / 0.62);
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer utilities {
+  /* The per-screen pose. Slower than the UI on purpose — see Ribbon.tsx. */
+  .ribbon-pose {
+    transform-origin: 50% 50%;
+    transition: transform 1250ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  /* The pad rises through where the mark was, rather than cutting in. */
+  .animate-rise {
+    animation: rise 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 26px, 0) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  /* A very slow drift so the artwork isn't dead, without ever drawing the eye
+     away from the input. */
+  .ribbon-drift {
+    transform-origin: 50% 50%;
+    animation: ribbonDrift 42s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes ribbonDrift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1.02);
+    }
+    50% {
+      transform: translate3d(-1.4%, 1%, 0) scale(1.05);
+    }
+  }
+}
