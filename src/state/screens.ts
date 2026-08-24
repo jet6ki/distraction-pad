@@ -69,20 +69,35 @@ export function toggleCalendar(s: Screen): Screen {
   }
 }
 
-/** Back steps out one level rather than jumping home. */
-export function stepBack(s: Screen): Screen {
+/**
+ * Pomodoro and Settings are OVERLAYS, not destinations. You get to them from
+ * wherever you were, and Back should put you back exactly there — including
+ * whether you were fullscreen.
+ */
+export const isOverlay = (s: Screen) => s === 'pomodoro' || s === 'settings'
+
+/**
+ * THE BACK STACK
+ * ==============
+ *   splash → capture → pad / calendar (either size) → pomodoro / settings
+ *
+ * Back walks that ladder down one rung:
+ *   overlay          → whatever you were on before it
+ *   pad or calendar  → capture      (either size; the corner button owns size)
+ *   capture          → splash       (i.e. sign out, for now)
+ *
+ * `from` is the remembered origin for overlays. It's passed in rather than
+ * stored here so this file stays a pure description of the machine — easy to
+ * read, easy to test, no hidden state.
+ */
+export function stepBack(s: Screen, from: Screen = 'pad'): Screen {
+  if (isOverlay(s)) return from
   switch (s) {
-    case 'padFull':
-      return 'pad'
-    case 'calendarFull':
-      return 'calendar'
-    case 'calendar':
-      return 'pad'
     case 'pad':
+    case 'padFull':
+    case 'calendar':
+    case 'calendarFull':
       return 'capture'
-    case 'pomodoro':
-    case 'settings':
-      return 'pad'
     case 'capture':
       return 'splash'
     default:
@@ -113,13 +128,26 @@ export const RIBBON_POSES: Record<Screen, Pose> = {
 }
 
 /** Motion timings, in one place so the whole app feels consistent. */
+/**
+ * MOTION TIMINGS — retuned for speed.
+ *
+ * The old values (ui 700ms, ribbon 1250ms) were chosen to feel "considered"
+ * and instead felt slow: every navigation cost the better part of a second
+ * before you could act. Interface motion should confirm what happened, not
+ * perform it. Roughly: 150ms reads as instant, 300ms as responsive, and
+ * anything past ~500ms starts to feel like waiting.
+ *
+ * The ribbon is still slower than the UI — that lag is what makes the
+ * background feel like it's settling behind the content — but the gap is now
+ * 340ms rather than 550ms.
+ */
 export const TIMING = {
-  ui: 700, // panels, buttons, layout
-  ribbon: 1250, // deliberately slower than the UI
-  micro: 200, // block transforms, checkbox draw
-  tick: 180, // ticking a task
-  splashFade: 1400, // the slow fade-in of the mark
-  through: 1750, // the zoom-through, matching the portfolio's intro T
+  ui: 340, // panels, buttons, layout
+  ribbon: 680, // still slower than the UI, but no longer a drag
+  micro: 150, // block transforms, checkbox draw
+  tick: 140, // ticking a task
+  splashFade: 750, // the mark arriving
+  through: 1050, // the zoom-through
   flyOut: 900, // (retired — kept so older callers still compile)
   railIdle: 5000, // how long before the rail slides away
 } as const

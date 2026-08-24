@@ -28,13 +28,13 @@
        exactly 166/255. 0.44 landed at 180 — visibly too transparent, which is
        why the ribbons punched through more than in the prototype. */
     background: rgb(108 108 108 / 0.55);
-    backdrop-filter: blur(22px) saturate(1.05);
-    -webkit-backdrop-filter: blur(22px) saturate(1.05);
+    backdrop-filter: blur(18px) saturate(1.05);
+    -webkit-backdrop-filter: blur(18px) saturate(1.05);
     border: 1px solid rgb(255 255 255 / 0.22);
     box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.3);
   }
   .icon-btn {
-    @apply grid h-11 w-11 place-items-center rounded-full text-white/80 transition duration-300 ease-pad;
+    @apply grid h-11 w-11 place-items-center rounded-full text-white/80 transition duration-150 ease-pad;
     background: rgb(120 120 120 / 0.42);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -59,8 +59,16 @@
   /* The per-screen pose. Slower than the UI on purpose — see Ribbon.tsx. */
   .ribbon-pose {
     transform-origin: 50% 50%;
-    transition: transform 1250ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
+  }
+  /* One constant blur, rasterised once. Never transitioned — see Ribbon.tsx. */
+  .ribbon-layer {
+    filter: blur(2px);
+    /* Promote to its own compositor layer so panel blurs above it don't force
+       the artwork to repaint. */
+    transform: translateZ(0);
+    contain: paint;
   }
 
   /* The pad rises through where the mark was, rather than cutting in. */
@@ -82,7 +90,7 @@
      away from the input. */
   .ribbon-drift {
     transform-origin: 50% 50%;
-    animation: ribbonDrift 42s ease-in-out infinite;
+    animation: ribbonDrift 60s ease-in-out infinite;
     will-change: transform;
   }
   @keyframes ribbonDrift {
@@ -334,7 +342,7 @@
     display: block; height: 30px; line-height: 30px; width: 100%;
     scroll-snap-align: center;
     font-size: 13px; color: rgb(255 255 255 / 0.45);
-    transition: color 180ms ease, transform 180ms ease;
+    transition: color 140ms ease, transform 140ms ease;
   }
   .wheel-item.is-on { color: #fff; font-weight: 600; transform: scale(1.16); }
 
@@ -344,7 +352,7 @@
     width: 250px; padding: .75rem;
     border-radius: 16px; color: #fff;
     box-shadow: 0 22px 52px -14px rgb(0 0 0 / 0.5);
-    animation: popIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: popIn 170ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .when-pop-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -506,7 +514,7 @@
     padding: .4rem .5rem; text-align: left;
     border-right: 1px solid rgb(255 255 255 / 0.16);
     border-bottom: 1px solid rgb(255 255 255 / 0.16);
-    transition: background 180ms ease;
+    transition: background 120ms ease;
   }
   /* INTERNAL separators only — no frame around the outside. */
   .cal-cell:nth-child(7n) { border-right: 0; }
@@ -576,14 +584,14 @@
     display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: .9rem;
     padding: 0 1.5rem;
-    animation: pd-fade-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: pd-fade-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   /* One shared duration + curve across the row, the bar and the dot. That
      shared timing is what makes them read as one object rearranging. */
   .capture-row {
     display: flex; align-items: center; gap: .8rem;
-    transition: gap 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: gap 320ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   .capture-row.is-asking { gap: 0; }
 
@@ -595,9 +603,9 @@
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgb(255 255 255 / 0.2);
     transition:
-      width 520ms cubic-bezier(0.22, 1, 0.36, 1),
-      background 320ms ease,
-      border-color 320ms ease;
+      width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      background 160ms ease,
+      border-color 160ms ease;
   }
   .capture-bar-button { cursor: pointer; }
   .capture-bar-button:hover {
@@ -620,9 +628,9 @@
     background: rgb(120 120 120 / 0.45);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     transition:
-      transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 380ms ease,
-      width 520ms cubic-bezier(0.22, 1, 0.36, 1);
+      transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 220ms ease,
+      width 320ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   .capture-dot:hover { transform: scale(1.07); color: #fff; }
   /* Absorbed: slides left INTO the bar while shrinking to nothing, rather

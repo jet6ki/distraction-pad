@@ -11,7 +11,7 @@
  * background-size:cover image would.
  */
 
-import { RIBBON_POSES, EASE, TIMING, type Screen } from '../state/screens'
+import { RIBBON_POSES, type Screen } from '../state/screens'
 
 type Bundle = {
   d: string
@@ -66,13 +66,24 @@ export default function Ribbon({ screen }: { screen: Screen }) {
   const transform = `translate3d(${pose.x}%, ${pose.y}%, 0) scale(${pose.scale}) rotate(${pose.rotate}deg)`
 
   return (
+    /**
+     * PERFORMANCE — the biggest win in the whole app was here.
+     *
+     * This layer used to carry `filter: blur(Npx)` with the value CHANGING per
+     * screen and a `transition` on it. A filter on a full-viewport element
+     * forces the browser to rasterise the entire artwork and then blur it —
+     * and animating the filter value makes it redo that work every single
+     * frame, while the glass panels on top are each running their own
+     * backdrop-filter over the result. That's what made navigation feel heavy.
+     *
+     * Now the blur is a single CONSTANT value that never animates, so it is
+     * rasterised once and cached. Only `transform` changes between screens,
+     * and transforms are handled by the compositor without repainting
+     * anything. Same look, a fraction of the cost.
+     */
     <div
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className="ribbon-layer pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       aria-hidden="true"
-      style={{
-        filter: pose.blur ? `blur(${pose.blur}px)` : undefined,
-        transition: `filter ${TIMING.ribbon}ms ${EASE}`,
-      }}
     >
       <svg
         className="h-full w-full"

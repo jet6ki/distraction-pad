@@ -28,6 +28,7 @@ import {
   EASE,
   TIMING,
   isFullscreen,
+  isOverlay,
   isPanelScreen,
   stepBack,
   toggleCalendar,
@@ -50,6 +51,14 @@ export default function App() {
    * open. `morphing` is true for exactly one frame.
    */
   const [morphing, setMorphing] = useState(false)
+
+  /**
+   * Where Back should return to when you leave an overlay.
+   * Pomodoro and Settings can be opened from the pad OR the calendar, at
+   * either size, and Back must land you exactly where you were — so we
+   * remember the screen you left rather than assuming 'pad'.
+   */
+  const [origin, setOrigin] = useState<Screen>('pad')
 
   const [pom, setPom] = useState<PomodoroState | null>(null)
   const cursor = useMemo(() => new Date(activeDay + 'T00:00:00'), [activeDay])
@@ -93,6 +102,24 @@ export default function App() {
    * SAME function object for the life of the app.
    */
   const enterFromSplash = useCallback(() => setScreen('capture'), [])
+
+  /**
+   * Open an overlay, remembering where we came from.
+   * Pressing the same rail button again does nothing: the rail is a way IN,
+   * the back button is the way out. Making the button toggle was the thing
+   * that kept dumping you on the notepad from the calendar.
+   */
+  const openOverlay = useCallback((next: Screen) => {
+    setScreen((cur) => {
+      if (cur === next) return cur
+      if (!isOverlay(cur)) setOrigin(cur)
+      return next
+    })
+  }, [])
+
+  const goBack = useCallback(() => {
+    setScreen((cur) => stepBack(cur, origin))
+  }, [origin])
 
   /**
    * Clearing the "typing" flag on mouse movement is what lets the rail come
@@ -163,7 +190,13 @@ export default function App() {
               full ? 'panel-full' : '',
               morphing ? 'panel-morph' : '',
             ].join(' ')}
-            style={{ transition: `all ${TIMING.ui}ms ${EASE}` }}
+            /* Explicit properties, never `all`. `transition: all` includes
+               backdrop-filter, box-shadow and colour — the browser then
+               re-rasterises the blur every frame of every layout change,
+               which is most of why this felt sluggish. */
+            style={{
+              transition: `width ${TIMING.ui}ms ${EASE}, height ${TIMING.ui}ms ${EASE}, border-radius ${TIMING.ui}ms ${EASE}, padding ${TIMING.ui}ms ${EASE}`,
+            }}
           >
             {/* The AI button survives the morph — it parks in the panel's top
                 corner rather than disappearing with the pill. ⌘K also opens it
@@ -203,9 +236,9 @@ export default function App() {
         <IconRail
           screen={screen}
           suppressed={typing && !full}
-          onBack={() => setScreen(stepBack(screen))}
-          onPomodoro={() => setScreen(screen === 'pomodoro' ? 'pad' : 'pomodoro')}
-          onSettings={() => setScreen(screen === 'settings' ? 'pad' : 'settings')}
+          onBack={goBack}
+          onPomodoro={() => openOverlay('pomodoro')}
+          onSettings={() => openOverlay('settings')}
         />
       )}
     </div>
