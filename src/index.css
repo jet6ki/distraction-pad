@@ -24,7 +24,10 @@
     /* A neutral grey tint, not a white one. White frosting over a light canvas
        leaves nothing for white text to sit against — the prototype's panels
        are mid-grey for exactly this reason. */
-    background: rgb(108 108 108 / 0.44);
+    /* Alpha measured off the Figma: the panel takes a plain #ECECEC canvas to
+       exactly 166/255. 0.44 landed at 180 — visibly too transparent, which is
+       why the ribbons punched through more than in the prototype. */
+    background: rgb(108 108 108 / 0.55);
     backdrop-filter: blur(22px) saturate(1.05);
     -webkit-backdrop-filter: blur(22px) saturate(1.05);
     border: 1px solid rgb(255 255 255 / 0.22);
@@ -90,5 +93,548 @@
     50% {
       transform: translate3d(-1.4%, 1%, 0) scale(1.05);
     }
+  }
+}
+
+/* ---------------------------------------------------------------
+   v0.3 additions.
+   Kept as plain CSS classes rather than Tailwind utilities because
+   these describe *components* ("what a pad footer is"), not one-off
+   spacing. Easier to find and change in one place.
+   --------------------------------------------------------------- */
+
+@layer components {
+  .app-root { position: relative; min-height: 100vh; overflow: hidden; }
+
+  /* The stage centres whatever panel is showing. */
+  .panel-stage {
+    position: fixed; inset: 0; z-index: 20;
+    display: grid; place-items: center; padding: 2rem;
+  }
+
+  .panel {
+    width: min(430px, 92vw); height: min(600px, 78vh);
+    border-radius: 22px; padding: 1.6rem 1.5rem;
+    color: #fff;
+  }
+  /* Fullscreen leaves a clear column on the right for the rail — previously
+     the panel ran underneath it and the buttons sat on top of the content. */
+  /* The right gutter is stage PADDING, not a panel margin. A margin on a
+     grid item that is already width:100% overflows the cell — which pushed
+     the panel off the left edge. Padding on the parent reserves the space
+     properly and the centred item just gets a smaller cell. */
+  .stage-full { padding: 2.2rem 9rem 2.2rem 2.4rem; }
+  .panel-full {
+    width: 100%; height: 100%;
+    border-radius: 20px; padding: 2.2rem 2.4rem;
+  }
+
+  /* capture pill */
+  .capture-pill {
+    width: min(430px, 74vw); height: 46px;
+    border-radius: 999px; padding: 0 1.4rem;
+    text-align: center; font-size: 14px; color: #fff;
+    background: rgb(108 108 108 / 0.5);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgb(255 255 255 / 0.2);
+  }
+  .capture-pill::placeholder { color: rgb(255 255 255 / 0.72); }
+  .capture-pill:focus { outline: none; }
+
+  /* pad footer */
+  .pad-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 1rem; margin-top: .5rem;
+  }
+  .pad-date { font-size: 13px; color: rgb(255 255 255 / 0.8); }
+  .pad-corner {
+    color: rgb(255 255 255 / 0.72);
+    transition: color 200ms ease, transform 200ms ease;
+  }
+  .pad-corner:hover { color: #fff; transform: translateY(-1px); }
+
+  /* date / time controls on a block */
+  .when-row { display: flex; align-items: center; gap: .45rem; margin-top: .25rem; }
+  .when-field {
+    background: transparent; border: 0; padding: 0;
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.68);
+  }
+  .when-field:focus { outline: none; color: #fff; }
+  .when-hint {
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.5);
+  }
+
+
+  /* pomodoro */
+  .pom-dial {
+    position: relative; width: 200px; height: 200px; border-radius: 999px;
+    background: rgb(255 255 255 / 0.42);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: grid; place-items: center;
+  }
+  .pom-time {
+    position: absolute; bottom: 26px;
+    font-size: 13px; color: #2a2a2a; letter-spacing: .06em;
+  }
+  .pom-label { font-size: 12px; color: rgb(255 255 255 / 0.85); margin-bottom: .3rem; }
+  .pom-opt {
+    font-size: 13px; color: rgb(255 255 255 / 0.7);
+    transition: color 180ms ease;
+  }
+  .pom-opt:hover { color: #fff; }
+  .pom-opt-on { color: #fff; font-weight: 600; }
+
+  /* settings */
+  .settings-title { font-size: 20px; color: rgb(255 255 255 / 0.92); }
+  .settings-danger { font-size: 13px; color: #ff5a52; }
+  .settings-danger:hover { text-decoration: underline; }
+}
+
+@keyframes pd-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@layer components {
+  /* --- morph: the panel is born at pill size and grows --------------- */
+  .panel-morph {
+    width: min(430px, 74vw) !important;
+    height: 46px !important;
+    border-radius: 999px !important;
+    padding: 0 1.4rem !important;
+    overflow: hidden;
+  }
+
+  /* --- the AI button, parked in the panel corner --------------------- */
+  .ai-dot {
+    position: absolute; top: .85rem; right: .9rem; z-index: 5;
+    display: grid; place-items: center;
+    height: 30px; width: 30px; border-radius: 999px;
+    color: rgb(255 255 255 / 0.8);
+    background: rgb(120 120 120 / 0.42);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: transform 200ms ease, color 200ms ease;
+  }
+  .ai-dot:hover { color: #fff; transform: scale(1.08); }
+  .panel { position: relative; }
+
+  /* --- wrapping text editor ----------------------------------------- */
+  .pad-input {
+    width: 100%; background: transparent; border: 0; padding: 0;
+    resize: none; overflow: hidden;          /* auto-grown from JS */
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    font-size: 14.5px; line-height: 1.55;
+    color: rgb(255 255 255 / 0.88);
+    font-family: inherit;
+  }
+  .pad-input:focus { outline: none; }
+  .pad-input::placeholder { color: rgb(255 255 255 / 0.55); }
+  .pad-input-heading { font-size: 17px; font-weight: 600; color: rgb(255 255 255 / 0.95); }
+  .pad-input.is-done { color: rgb(255 255 255 / 0.45); text-decoration: line-through; }
+
+  /* --- the little date chip ----------------------------------------- */
+  .when-chip {
+    margin-top: 2px; font-size: 10.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: rgb(255 255 255 / 0.5);
+    transition: color 180ms ease;
+  }
+  .when-chip:hover { color: #fff; }
+  .when-chip.has-date { color: rgb(255 255 255 / 0.78); }
+
+
+
+  .pom-phase {
+    position: absolute; bottom: 12px;
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: rgb(0 0 0 / 0.45);
+  }
+  .pom-actions { display: flex; gap: 1.1rem; }
+  .pom-actions button {
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.78);
+  }
+  .pom-actions button:hover { color: #fff; }
+  .pom-actions button:disabled { opacity: .35; }
+
+  /* Always mounted so the countdown survives navigation. */
+  .pom-host {
+    position: fixed; inset: 0; z-index: 25;
+    display: grid; place-items: center; padding: 2rem;
+    pointer-events: none;
+  }
+  .pom-host > * {
+    width: min(430px, 92vw); height: min(600px, 78vh);
+    pointer-events: auto;
+  }
+  .pom-host.is-idle { opacity: 0; pointer-events: none; }
+  .pom-host.is-idle > * { pointer-events: none; }
+
+  /* the minimised clock */
+  .pom-mini {
+    position: fixed; right: 1.6rem; bottom: 1.6rem; z-index: 40;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 62px; width: 62px; border-radius: 999px;
+    background: rgb(108 108 108 / 0.55);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgb(255 255 255 / 0.2);
+    color: #fff;
+    transition: transform 220ms ease;
+  }
+  .pom-mini:hover { transform: scale(1.06); }
+  .pom-mini-time { font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+  .pom-mini-phase {
+    font-size: 8px; letter-spacing: .12em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.7);
+  }
+}
+
+/* =================================================================
+   v0.5 — motion + the two screens that needed rework
+   ================================================================= */
+
+@layer components {
+  /* ---- SPLASH: the zoom-through, lifted from the portfolio's intro T ---- */
+  .splash-stage {
+    position: fixed; inset: 0; z-index: 20;
+    display: grid; place-items: center;
+    background: transparent; border: 0; cursor: pointer;
+  }
+  /* Phase 1: arrive. */
+  .pd-in { animation: pdIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  /* Phase 2: rush past the viewer. Pure scale — no translate, that's the point. */
+  .pd-through { animation: pdThrough 1.05s cubic-bezier(0.62, 0.02, 0.34, 1) forwards; }
+
+  /* ---- POMODORO ---- */
+  .pom-root {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1.5rem;
+    height: 100%; overflow: hidden;      /* nothing escapes the panel again */
+  }
+  .pom-face { width: 100%; height: 100%; }
+  .pom-readout {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; pointer-events: none;
+  }
+  .pom-wheels { display: flex; gap: 1.4rem; }
+  .wheel-col { display: flex; flex-direction: column; align-items: center; }
+  .wheel {
+    height: 90px; width: 66px; overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none; -ms-overflow-style: none;
+    -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+            mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  }
+  .wheel::-webkit-scrollbar { display: none; }
+  .wheel:focus-visible { outline: none; }
+  .wheel-pad { height: 30px; flex: 0 0 30px; }
+  .wheel-item {
+    display: block; height: 30px; line-height: 30px; width: 100%;
+    scroll-snap-align: center;
+    font-size: 13px; color: rgb(255 255 255 / 0.45);
+    transition: color 180ms ease, transform 180ms ease;
+  }
+  .wheel-item.is-on { color: #fff; font-weight: 600; transform: scale(1.16); }
+
+  /* ---- WHEN POPOVER, in this app's clothes ---- */
+  .when-pop {
+    position: absolute; z-index: 60; top: 100%; left: 0; margin-top: 8px;
+    width: 250px; padding: .75rem;
+    border-radius: 16px; color: #fff;
+    box-shadow: 0 22px 52px -14px rgb(0 0 0 / 0.5);
+    animation: popIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .when-pop-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: .5rem;
+  }
+  .when-pop-month { font-size: 13px; font-weight: 600; }
+  .when-pop-nav { display: flex; align-items: center; gap: .5rem; }
+  .when-pop-nav button { color: rgb(255 255 255 / 0.65); font-size: 14px; line-height: 1; }
+  .when-pop-nav button:hover { color: #fff; }
+  .when-pop-today {
+    font-size: 10px !important; letter-spacing: .1em; text-transform: uppercase;
+  }
+  .when-pop-dow, .when-pop-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
+  }
+  .when-pop-dow {
+    font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.45); text-align: center; padding-bottom: 3px;
+  }
+  .when-pop-day {
+    height: 26px; border-radius: 7px; font-size: 11.5px;
+    color: rgb(255 255 255 / 0.82);
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .when-pop-day:hover { background: rgb(255 255 255 / 0.14); color: #fff; }
+  /* the app's green, not Notion's blue */
+  .when-pop-day.is-today { color: #6ee0b4; }
+  .when-pop-day.is-picked { background: #1F7A5C; color: #fff; font-weight: 600; }
+
+  .when-pop-rows {
+    margin-top: .6rem; padding-top: .3rem;
+    border-top: 1px solid rgb(255 255 255 / 0.14);
+  }
+  .when-pop-row {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: .36rem 0; font-size: 12px;
+    color: rgb(255 255 255 / 0.85);
+  }
+  .when-pop-row:hover { color: #fff; }
+
+  /* a small pill switch, so the toggles aren't OS checkboxes */
+  .when-switch {
+    position: relative; width: 30px; height: 17px; border-radius: 999px;
+    background: rgb(255 255 255 / 0.22);
+    transition: background 200ms ease;
+  }
+  .when-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 13px; height: 13px; border-radius: 999px; background: #fff;
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .when-switch.is-on { background: #1F7A5C; }
+  .when-switch.is-on::after { transform: translateX(13px); }
+
+  .when-time { padding: .25rem 0 .1rem; }
+  .when-time-label {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.5);
+  }
+  .when-time-wheels { display: flex; align-items: center; justify-content: center; gap: .2rem; }
+  .when-time-wheels .wheel { width: 46px; height: 66px; }
+  .when-time-wheels .wheel-item { font-size: 12.5px; }
+  .when-time-colon { color: rgb(255 255 255 / 0.5); font-size: 13px; }
+
+  .when-pop-clear {
+    margin-top: .4rem; padding-top: .45rem; width: 100%; text-align: left;
+    border-top: 1px solid rgb(255 255 255 / 0.14);
+    font-size: 11.5px; letter-spacing: .04em;
+    color: rgb(255 255 255 / 0.68);
+  }
+  .when-pop-clear:hover { color: #ff8a82; }
+
+  /* NOTE: deliberately NOT clipping .panel. The pomodoro clips itself via
+     .pom-root; clipping the panel would cut off a when-popover opened on a
+     line near the bottom of the pad. */
+}
+
+@keyframes pdIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* The portfolio's curve, beat for beat. Scale only. */
+@keyframes pdThrough {
+  0%   { opacity: 1; transform: scale(1); }
+  16%  { transform: scale(1.06); }        /* anticipation */
+  100% { opacity: 0; transform: scale(26); }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@layer components {
+  /* Override the v0.3 dial: 200px was what pushed the column out of the panel. */
+  .pom-dial {
+    position: relative; width: 156px; height: 156px; border-radius: 999px;
+    background: rgb(255 255 255 / 0.46);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: block; flex: 0 0 auto;
+  }
+  /* The readout is now centred inside the dial, not pinned to its bottom. */
+  .pom-time {
+    position: static; bottom: auto;
+    font-size: 21px; font-weight: 600; color: #1b1b1b;
+    letter-spacing: .02em; font-variant-numeric: tabular-nums;
+  }
+  .pom-phase {
+    position: static; bottom: auto;
+    font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
+    color: rgb(0 0 0 / 0.42);
+  }
+  .pom-label {
+    font-size: 10px; letter-spacing: .06em;
+    color: rgb(255 255 255 / 0.7); margin-bottom: .35rem;
+    white-space: nowrap;
+  }
+}
+
+@layer components {
+  /* ---- CALENDAR, rebuilt against the Figma ------------------------- */
+  .cal-root { display: flex; flex-direction: column; height: 100%; }
+
+  .cal-title {
+    font-size: 26px; font-weight: 400; letter-spacing: -0.01em;
+    margin: 0 0 1.6rem;
+  }
+  .cal-title-dense { font-size: 20px; line-height: 1.1; margin-bottom: 1rem; }
+
+  /* The grid is inset from the panel edges, as in the prototype — it never
+     runs into the corners. */
+  .cal-frame {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    margin: 0 auto; width: 100%; max-width: 900px;
+    padding: 0 0.5rem;
+  }
+
+  .cal-dow {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    font-size: 12px; color: rgb(255 255 255 / 0.72);
+    text-align: center; padding-bottom: .7rem;
+  }
+
+  .cal-grid {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 1fr;
+    /* the only outer line: the rule under the weekday row */
+    border-top: 1px solid rgb(255 255 255 / 0.22);
+  }
+
+  .cal-cell {
+    /* min-width:0 is what lets long event text clip instead of pushing the
+       column wider. Grid items default to their content's minimum size. */
+    min-width: 0; overflow: hidden;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+    padding: .4rem .5rem; text-align: left;
+    border-right: 1px solid rgb(255 255 255 / 0.16);
+    border-bottom: 1px solid rgb(255 255 255 / 0.16);
+    transition: background 180ms ease;
+  }
+  /* INTERNAL separators only — no frame around the outside. */
+  .cal-cell:nth-child(7n) { border-right: 0; }
+  .cal-cell:nth-last-child(-n + 7) { border-bottom: 0; }
+
+  .cal-cell:hover { background: rgb(255 255 255 / 0.07); }
+  .cal-cell-empty { pointer-events: none; }
+
+  .cal-num {
+    font-size: 13px; color: rgb(255 255 255 / 0.92);
+    font-variant-numeric: tabular-nums; margin-bottom: 2px;
+  }
+  .cal-cell.is-today .cal-num {
+    color: #fff; font-weight: 600;
+    /* a quiet ring rather than a filled blob */
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.5);
+    border-radius: 999px; padding: 0 5px;
+  }
+
+  .cal-item {
+    display: block; width: 100%;
+    font-size: 11px; line-height: 1.35;
+    color: rgb(255 255 255 / 0.8);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cal-bullet { color: rgb(255 255 255 / 0.55); margin-right: 4px; }
+  .cal-more {
+    font-size: 10px; color: rgb(255 255 255 / 0.5); margin-top: 1px;
+  }
+  .cal-dot {
+    width: 4px; height: 4px; border-radius: 999px;
+    background: rgb(255 255 255 / 0.7);
+  }
+
+  /* ---- POMODORO: digital above, analog dial below ------------------ */
+  .pom-digital {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+  }
+  .pom-digital .pom-time {
+    font-size: 34px; font-weight: 300; letter-spacing: -0.01em;
+    color: #fff; font-variant-numeric: tabular-nums;
+  }
+  .pom-digital .pom-phase {
+    font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.6);
+  }
+
+  /* ---- the note under a task / event ------------------------------ */
+  .row-meta { display: flex; align-items: center; gap: .7rem; }
+  .note-input {
+    width: 100%; margin-top: 1px;
+    background: transparent; border: 0; padding: 0;
+    resize: none; overflow: hidden;
+    font-family: inherit;               /* same typeface as the line above */
+    font-size: 12px; line-height: 1.45;
+    color: rgb(255 255 255 / 0.55);     /* lower opacity = subordinate */
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .note-input:focus { outline: none; color: rgb(255 255 255 / 0.72); }
+  .note-input::placeholder { color: rgb(255 255 255 / 0.32); }
+}
+
+@layer components {
+  /* ---- CAPTURE BAR: button by default, AI input on demand ---------- */
+  .capture-stage {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: .9rem;
+    padding: 0 1.5rem;
+    animation: pd-fade-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* One shared duration + curve across the row, the bar and the dot. That
+     shared timing is what makes them read as one object rearranging. */
+  .capture-row {
+    display: flex; align-items: center; gap: .8rem;
+    transition: gap 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .capture-row.is-asking { gap: 0; }
+
+  .capture-bar {
+    width: min(430px, 74vw); height: 48px;
+    border-radius: 999px; padding: 0 1.5rem;
+    font-size: 14px; color: #fff; text-align: center;
+    background: rgb(108 108 108 / 0.5);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgb(255 255 255 / 0.2);
+    transition:
+      width 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      background 320ms ease,
+      border-color 320ms ease;
+  }
+  .capture-bar-button { cursor: pointer; }
+  .capture-bar-button:hover {
+    background: rgb(108 108 108 / 0.62);
+    border-color: rgb(255 255 255 / 0.34);
+  }
+  /* In ask mode the bar swallows the dot's width plus the gap. */
+  .capture-bar-input {
+    width: min(560px, 88vw);
+    text-align: left;
+    border-color: rgb(255 255 255 / 0.32);
+  }
+  .capture-bar-input:focus { outline: none; }
+  .capture-bar-input::placeholder { color: rgb(255 255 255 / 0.55); }
+
+  .capture-dot {
+    display: grid; place-items: center; flex: 0 0 auto;
+    height: 44px; width: 44px; border-radius: 999px;
+    color: rgb(255 255 255 / 0.85);
+    background: rgb(120 120 120 / 0.45);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition:
+      transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 380ms ease,
+      width 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .capture-dot:hover { transform: scale(1.07); color: #fff; }
+  /* Absorbed: slides left INTO the bar while shrinking to nothing, rather
+     than blinking out. `width: 0` is what closes the space it occupied. */
+  .capture-dot.is-absorbed {
+    width: 0; opacity: 0; transform: translateX(-26px) scale(0.3);
+    pointer-events: none;
+  }
+
+  .capture-hint {
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: rgb(255 255 255 / 0.45);
+    animation: pd-fade-in 420ms ease both;
   }
 }

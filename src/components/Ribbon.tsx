@@ -11,6 +11,8 @@
  * background-size:cover image would.
  */
 
+import { RIBBON_POSES, EASE, TIMING, type Screen } from '../state/screens'
+
 type Bundle = {
   d: string
   color: string
@@ -52,18 +54,26 @@ const BUNDLES: Bundle[] = [
  * than the UI does, so the background reads as settling after the content has
  * already moved — that lag is most of what makes it feel composed rather than
  * like wallpaper sitting behind a page swap.
+ *
+ * Every screen now has its own pose, listed in state/screens.ts. To retune one,
+ * edit the numbers there — nothing in this file needs touching.
+ *
+ * The slight blur is applied to the whole layer rather than per-path, so the
+ * browser can composite it once on the GPU instead of per stroke.
  */
-export type RibbonPose = 'splash' | 'pad' | 'wide'
+export default function Ribbon({ screen }: { screen: Screen }) {
+  const pose = RIBBON_POSES[screen]
+  const transform = `translate3d(${pose.x}%, ${pose.y}%, 0) scale(${pose.scale}) rotate(${pose.rotate}deg)`
 
-const POSES: Record<RibbonPose, string> = {
-  splash: 'translate3d(0,0,0) scale(1.02) rotate(0deg)',
-  pad: 'translate3d(-4%,7%,0) scale(1.12) rotate(-3.5deg)',
-  wide: 'translate3d(-9%,13%,0) scale(1.24) rotate(-6deg)',
-}
-
-export default function Ribbon({ pose = 'splash' }: { pose?: RibbonPose }) {
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+    <div
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      aria-hidden="true"
+      style={{
+        filter: pose.blur ? `blur(${pose.blur}px)` : undefined,
+        transition: `filter ${TIMING.ribbon}ms ${EASE}`,
+      }}
+    >
       <svg
         className="h-full w-full"
         viewBox="0 0 1440 900"
@@ -71,7 +81,7 @@ export default function Ribbon({ pose = 'splash' }: { pose?: RibbonPose }) {
       >
         <g
           className="ribbon-pose"
-          style={{ transform: POSES[pose] }}
+          style={{ transform }}
         >
          <g className="ribbon-drift">
           {BUNDLES.map((bundle, bi) => (

@@ -1,6 +1,6 @@
 /**
- * Hand-rolled icons matching the prototype's set. A handful of line icons isn't
- * worth an icon library — that would be tens of KB for a few paths.
+ * Hand-rolled icons matching the prototype's set. Six small line icons isn't
+ * worth an icon library — that would be ~50KB for six paths.
  */
 
 type IconProps = { className?: string }
@@ -14,6 +14,14 @@ const base = {
   strokeWidth: 1.6,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
+}
+
+export function Sparkle({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 3v4M12 17v4M5.5 5.5l2.5 2.5M16 16l2.5 2.5M3 12h4M17 12h4M5.5 18.5L8 16M16 8l2.5-2.5" />
+    </svg>
+  )
 }
 
 export function Timer({ className }: IconProps) {
@@ -33,16 +41,57 @@ export function Back({ className }: IconProps) {
   )
 }
 
-export function Settings({ className }: IconProps) {
+export function SignIn({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 2.6 15H2.5a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 7a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 2.6V2.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 2.9 1.2l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 21.4 9h.1a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.2 2.9z" />
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
     </svg>
   )
 }
 
-export function CalendarView({ className }: IconProps) {
+export function Clock({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  )
+}
+
+/**
+ * The gear. The previous path was malformed — its arcs did not close onto the
+ * tooth positions, so it rendered as a lumpy blob rather than a cog. This is
+ * the standard eight-tooth gear outline, which closes correctly.
+ */
+export function Settings({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  )
+}
+
+/** Calendar with a slash — "leave the calendar, go back to the pad". */
+export function CalendarOff({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4M4 20L20 4" />
+    </svg>
+  )
+}
+
+/** Minimise — the fullscreen button becomes this once expanded. */
+export function Minimise({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M9 4v3a2 2 0 0 1-2 2H4M20 9h-3a2 2 0 0 1-2-2V4M15 20v-3a2 2 0 0 1 2-2h3M4 15h3a2 2 0 0 1 2 2v3" />
+    </svg>
+  )
+}
+
+export function CalendarPlus({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
       <rect x="3" y="5" width="18" height="16" rx="2" />

@@ -1,104 +1,106 @@
+/**
+ * THE NOTEPAD
+ * ===========
+ * A live surface, not a form. There is no submit — what you type is already
+ * saved. Enter opens a new line, Backspace on an empty line removes it.
+ *
+ * The bottom bar carries the three things the Figma shows:
+ *   calendar+ (left) · the date (centre) · expand or minimise (right)
+ */
+
 import { useState } from 'react'
 import BlockRow from './BlockRow'
-import { CalendarView, Expand, Close } from './icons'
-import { emptyBlock, longDayLabel, type Block, type Pad as PadModel } from '../lib/model'
+import { CalendarPlus, Expand, Minimise } from './icons'
+import { emptyBlock, longDate, type Block, type Pad as PadModel } from '../lib/model'
 
 type Props = {
   pad: PadModel
-  expanded: boolean
-  unfinishedCount: number
-  onChange: (pad: PadModel) => void
-  onToggleExpand: () => void
-  onSwitchView: () => void
-  onPullForward: () => void
+  fullscreen: boolean
+  onChange: (next: PadModel) => void
+  onTyping: () => void
+  onCalendar: () => void
+  onToggleSize: () => void
 }
 
-/**
- * The day's pad. A live surface, not a form: every keystroke is the document.
- * Enter opens a new line, Backspace on an empty line removes it.
- */
-export default function Pad({
+export default function PadPanel({
   pad,
-  expanded,
-  unfinishedCount,
+  fullscreen,
   onChange,
-  onToggleExpand,
-  onSwitchView,
-  onPullForward,
+  onTyping,
+  onCalendar,
+  onToggleSize,
 }: Props) {
-  const [focusIndex, setFocusIndex] = useState(0)
+  const [focus, setFocus] = useState(0)
 
-  function patchBlock(i: number, patch: Partial<Block>) {
-    const blocks = pad.blocks.map((b, bi) => (bi === i ? { ...b, ...patch } : b))
-    onChange({ ...pad, blocks, updatedAt: new Date().toISOString() })
+  function setBlocks(blocks: Block[]) {
+    onChange({ ...pad, blocks })
   }
 
-  function insertAfter(i: number) {
-    const blocks = [...pad.blocks]
-    blocks.splice(i + 1, 0, emptyBlock())
-    onChange({ ...pad, blocks, updatedAt: new Date().toISOString() })
-    setFocusIndex(i + 1)
+  function patch(i: number, p: Partial<Block>) {
+    onTyping()
+    const next = pad.blocks.slice()
+    next[i] = { ...next[i], ...p }
+    setBlocks(next)
+  }
+
+  /** Wholesale swap — used when a block changes type and should lose fields. */
+  function replace(i: number, block: Block) {
+    const next = pad.blocks.slice()
+    next[i] = block
+    setBlocks(next)
+  }
+
+  function addAfter(i: number) {
+    const next = pad.blocks.slice()
+    next.splice(i + 1, 0, emptyBlock())
+    setBlocks(next)
+    setFocus(i + 1)
   }
 
   function removeAt(i: number) {
     if (pad.blocks.length === 1) return
-    const blocks = pad.blocks.filter((_, bi) => bi !== i)
-    onChange({ ...pad, blocks, updatedAt: new Date().toISOString() })
-    setFocusIndex(Math.max(0, i - 1))
+    const next = pad.blocks.slice()
+    next.splice(i, 1)
+    setBlocks(next)
+    setFocus(Math.max(0, i - 1))
   }
 
+  const [y, m, d] = pad.day.split('-').map(Number)
+  const dateLabel = longDate(new Date(y, (m ?? 1) - 1, d ?? 1))
+
   return (
-    <article
-      className={[
-        'glass flex flex-col rounded-[22px] transition-all duration-700 ease-pad',
-        expanded
-          ? 'h-[calc(100vh-104px)] w-[calc(100vw-210px)] p-10'
-          : 'h-[430px] w-[min(88vw,560px)] p-7',
-      ].join(' ')}
-    >
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-        {pad.blocks.map((block, i) => (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+        {pad.blocks.map((b, i) => (
           <BlockRow
-            key={block.id}
-            block={block}
+            key={b.id}
+            block={b}
             index={i}
-            focused={focusIndex === i}
-            onChange={(patch) => patchBlock(i, patch)}
-            onEnter={() => insertAfter(i)}
+            focused={focus === i}
+            onFocus={() => setFocus(i)}
+            onChange={(p) => patch(i, p)}
+            onReplace={(nb) => replace(i, nb)}
+            onEnter={() => addAfter(i)}
             onBackspaceEmpty={() => removeAt(i)}
-            onFocus={() => setFocusIndex(i)}
           />
         ))}
       </div>
 
-      {unfinishedCount > 0 && (
-        <button
-          onClick={onPullForward}
-          className="mt-3 self-start text-[11px] uppercase tracking-[0.14em] text-white/55 transition hover:text-white/90"
-        >
-          {unfinishedCount} unfinished from earlier — pull forward
-        </button>
-      )}
-
-      <footer className="flex items-center justify-between pt-5">
-        <button
-          onClick={onSwitchView}
-          aria-label="Switch to calendar"
-          className="text-white/65 transition hover:text-white"
-        >
-          <CalendarView />
+      <div className="pad-footer">
+        <button className="pad-corner" onClick={onCalendar} aria-label="Open calendar">
+          <CalendarPlus />
         </button>
 
-        <span className="text-[12.5px] text-white/80">{longDayLabel(pad.day)}</span>
+        <span className="pad-date">{dateLabel}</span>
 
         <button
-          onClick={onToggleExpand}
-          aria-label={expanded ? 'Collapse' : 'Expand'}
-          className="text-white/65 transition hover:text-white"
+          className="pad-corner"
+          onClick={onToggleSize}
+          aria-label={fullscreen ? 'Minimise' : 'Expand to fullscreen'}
         >
-          {expanded ? <Close /> : <Expand />}
+          {fullscreen ? <Minimise /> : <Expand />}
         </button>
-      </footer>
-    </article>
+      </div>
+    </div>
   )
 }
